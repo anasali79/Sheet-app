@@ -320,68 +320,159 @@ export function SpreadsheetGrid({
           className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
           style={{ maxHeight: "75vh" }}
         >
-          {/* Mobile Table View */}
+          {/* Mobile Table View - Spreadsheet Style */}
           <div className="block md:hidden">
-            <div className="space-y-2 p-3">
-              {filteredData.map((row, rowIndex) => (
-                <div key={row.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
-                  {/* Row header */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-500">#{row.id}</span>
-                    <Badge className={`text-xs ${getStatusBadge(safeString(row.status))}`}>
-                      {safeString(row.status)}
-                    </Badge>
-                  </div>
-
-                  {/* Job Request - clickable */}
-                  <div>
-                    <button
-                      onClick={() => handleTaskClick(row)}
-                      className="text-left hover:text-blue-600 hover:underline w-full text-sm font-medium"
-                    >
-                      {safeString(row.jobRequest)}
-                    </button>
-                  </div>
-
-                  {/* Key details in rows */}
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Submitter:</span>
-                      <span className="font-medium">{safeString(row.submitter)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Assignee:</span>
-                      <span className="font-medium">{safeString(row.assignee)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Priority:</span>
-                      <Badge className={`text-xs ${getPriorityBadge(safeString(row.priority))}`}>
-                        {safeString(row.priority)}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Due Date:</span>
-                      <span className="font-medium">{safeString(row.dueDate)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Budget:</span>
-                      <span className="font-medium text-green-600">₹{safeString(row.budget)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Est.Value:</span>
-                      <span className="font-medium text-blue-600">₹{safeString(row.estValue)}</span>
-                    </div>
-                    {row.url && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">URL:</span>
-                        <span className="text-blue-600 hover:underline cursor-pointer text-xs">
-                          {truncateText(safeString(row.url), 25)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+            <div
+              className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+              style={{ maxHeight: "75vh" }}
+            >
+              <table className="w-full border-collapse min-w-max bg-white">
+                <thead className="sticky top-0 bg-gray-50 z-10">
+                  <tr className="border-b border-gray-200">
+                    <th className="w-8 px-1 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 bg-gray-50">
+                      #
+                    </th>
+                    {visibleColumns.map((column) => (
+                      <th
+                        key={column.key}
+                        className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 cursor-pointer hover:bg-gray-100 bg-gray-50 min-w-24"
+                        onClick={() => handleSort(column.key)}
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span className="truncate">{column.label}</span>
+                          <ArrowUpDown className="w-3 h-3" />
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredData.map((row, rowIndex) => (
+                    <tr key={row.id} className="hover:bg-gray-50">
+                      <td className="px-1 py-2 text-xs text-gray-500 border-r border-gray-200 bg-gray-50 font-medium">
+                        {row.id}
+                      </td>
+                      {visibleColumns.map((column) => (
+                        <td
+                          key={column.key}
+                          className={`px-2 py-2 text-xs border-r border-gray-200 cursor-pointer min-w-24 ${
+                            selectedCell?.row === rowIndex && selectedCell?.col === column.key
+                              ? "bg-blue-50 ring-2 ring-blue-500"
+                              : ""
+                          }`}
+                          onClick={() => handleCellClick(rowIndex, column.key)}
+                          onDoubleClick={() => handleCellDoubleClick(rowIndex, column.key)}
+                        >
+                          {editingCell?.row === rowIndex && editingCell?.col === column.key ? (
+                            column.key === "status" ? (
+                              <Select value={editValue} onValueChange={handleCellEdit}>
+                                <SelectTrigger className="h-6 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Submitted">Submitted</SelectItem>
+                                  <SelectItem value="In-progress">In-progress</SelectItem>
+                                  <SelectItem value="Need to start">Need to start</SelectItem>
+                                  <SelectItem value="Complete">Complete</SelectItem>
+                                  <SelectItem value="Blocked">Blocked</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : column.key === "priority" ? (
+                              <Select value={editValue} onValueChange={handleCellEdit}>
+                                <SelectTrigger className="h-6 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="High">High</SelectItem>
+                                  <SelectItem value="Medium">Medium</SelectItem>
+                                  <SelectItem value="Low">Low</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Input
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onBlur={() => handleCellEdit(editValue)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleCellEdit(editValue)
+                                  } else if (e.key === "Escape") {
+                                    setEditingCell(null)
+                                    setEditValue("")
+                                  }
+                                }}
+                                className="h-6 text-xs border-0 bg-transparent p-1"
+                                autoFocus
+                              />
+                            )
+                          ) : (
+                            <div className="truncate">
+                              {column.key === "submitted" ? (
+                                <span className="text-gray-600">{safeString(row.submitted)}</span>
+                              ) : column.key === "status" ? (
+                                <Badge className={`text-xs ${getStatusBadge(safeString(row.status))}`}>
+                                  {safeString(row.status)}
+                                </Badge>
+                              ) : column.key === "priority" ? (
+                                <Badge className={`text-xs ${getPriorityBadge(safeString(row.priority))}`}>
+                                  {safeString(row.priority)}
+                                </Badge>
+                              ) : column.key === "url" ? (
+                                <span className="text-blue-600 hover:underline cursor-pointer">
+                                  {truncateText(safeString(row.url), 15)}
+                                </span>
+                              ) : column.key === "jobRequest" ? (
+                                <button
+                                  onClick={() => handleTaskClick(row)}
+                                  className="text-left hover:text-blue-600 hover:underline w-full text-xs"
+                                  title={safeString(row.jobRequest)}
+                                >
+                                  {truncateText(safeString(row.jobRequest), 20)}
+                                </button>
+                              ) : column.key === "budget" || column.key === "estValue" ? (
+                                <span className="font-medium text-green-600">
+                                  ₹{safeString(row[column.key as keyof SpreadsheetRow])}
+                                </span>
+                              ) : (
+                                <span title={safeString(row[column.key as keyof SpreadsheetRow])}>
+                                  {truncateText(safeString(row[column.key as keyof SpreadsheetRow]), 12)}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  {/* Empty rows for mobile too */}
+                  {Array.from({ length: Math.max(0, 11 - filteredData.length) }, (_, i) => (
+                    <tr key={`empty-mobile-${i}`} className="hover:bg-gray-50">
+                      <td className="px-1 py-2 text-xs text-gray-500 border-r border-gray-200 bg-gray-50 font-medium">
+                        {filteredData.length + i + 1}
+                      </td>
+                      {visibleColumns.map((column) => (
+                        <td
+                          key={column.key}
+                          className={`px-2 py-2 text-xs border-r border-gray-200 cursor-pointer min-w-24 ${
+                            selectedCell?.row === filteredData.length + i && selectedCell?.col === column.key
+                              ? "bg-blue-50 ring-2 ring-blue-500"
+                              : ""
+                          }`}
+                          onClick={() => handleCellClick(filteredData.length + i, column.key)}
+                        >
+                          {selectedCell?.row === filteredData.length + i && selectedCell?.col === column.key && (
+                            <Input
+                              className="w-full h-full border-none outline-none bg-transparent text-xs"
+                              autoFocus
+                              placeholder="Enter value..."
+                            />
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
